@@ -12,7 +12,7 @@ section it came from.
 
 ## Stack
 
-- **SvelteKit** (Svelte 5) — frontend + server routes, `adapter-node`
+- **SvelteKit** (Svelte 5) — frontend + server routes, deployed to Vercel via `adapter-vercel`
 - **Supabase** — Auth, Postgres (full RLS), private Storage buckets
 - **Google Gemini API** — server-side only (vision OCR + question generation); the key
   never reaches the browser. Uses Gemini's free tier (Google AI Studio), so there's no
@@ -36,7 +36,26 @@ npm install
 npm run dev
 ```
 
-`npm run check` typechecks; `npm run build && node build` runs the production server.
+`npm run check` typechecks; `npm run build` produces a Vercel Build Output
+(`.vercel/output`) — use `vercel dev` to preview it locally, or push to a
+repo connected to Vercel to deploy.
+
+## Deploying to Vercel
+
+1. Push this repo to GitHub (or GitLab/Bitbucket) and import it in the
+   [Vercel dashboard](https://vercel.com/new) — it auto-detects SvelteKit.
+2. In the project's Settings → Environment Variables, add the same 5 keys
+   from `.env`: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`.
+3. Deploy. Every route runs as a Node.js serverless function
+   (`adapter-vercel`'s default runtime — not Edge, since several ingestion
+   parsers use Node APIs that Edge doesn't support).
+4. The `extract` and `generate` API routes set `maxDuration: 60` (the Hobby
+   plan's ceiling) since Gemini calls can take longer than Vercel's default
+   10s function timeout. **Caveat:** a source with several photos OCRs them
+   one at a time, so a large multi-photo batch could still exceed 60s on
+   Hobby — keep photo batches modest, or raise `maxDuration` further if the
+   account is on Pro.
 
 ## Architecture
 

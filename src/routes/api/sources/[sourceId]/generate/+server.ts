@@ -3,6 +3,11 @@ import { supabaseAdmin } from '$lib/server/supabase-admin';
 import { consumeUsage, UsageLimitError } from '$lib/server/usage';
 import { generateQuestions } from '$lib/server/generation';
 import type { RequestHandler } from './$types';
+import type { Config } from '@sveltejs/adapter-vercel';
+
+// Generating 10-20 questions can take longer than Vercel's default 10s
+// function timeout, especially with longer confirmed source text.
+export const config: Config = { maxDuration: 60 };
 
 /**
  * POST /api/sources/[sourceId]/generate — generate 10–20 source-grounded

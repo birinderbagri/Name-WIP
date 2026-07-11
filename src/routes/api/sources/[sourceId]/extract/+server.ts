@@ -4,6 +4,13 @@ import { consumeUsage, UsageLimitError } from '$lib/server/usage';
 import { getParser } from '$lib/server/ingestion/parsers';
 import type { SourceRecord, SourceType } from '$lib/server/ingestion/types';
 import type { RequestHandler } from './$types';
+import type { Config } from '@sveltejs/adapter-vercel';
+
+// Multi-photo OCR runs one Gemini vision call per photo sequentially, which
+// can exceed Vercel's default 10s function timeout. 60s is the Hobby-plan
+// ceiling; raise it if the account is on a higher tier, or lower it if a
+// smaller cap is enforced.
+export const config: Config = { maxDuration: 60 };
 
 /**
  * POST /api/sources/[sourceId]/extract — run the parser for this source and
