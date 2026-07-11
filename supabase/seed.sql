@@ -40,7 +40,7 @@ insert into cosmetic_shop_sections (slug, name, category, sort_order, is_coming_
   ('variants',    'Sprite Variants',   'creature_variant', 4, true);
 
 insert into cosmetic_items (section_id, slug, name, description, category, sprite_key, coin_price, earnable_from, is_available)
-select s.id, v.slug, v.name, v.description, s.category, v.sprite_key, null, v.earnable_from, false
+select s.id, v.slug, v.name, v.description, s.category, v.sprite_key, null, v.earnable_from, coalesce(v.earnable_from, '') = 'gameplay'
 from cosmetic_shop_sections s
 join (values
   ('outfits',     'petal-cloak',    'Petal Cloak',        'A cloak stitched from falling blossom petals.',        'petal-cloak',    'gameplay'),
