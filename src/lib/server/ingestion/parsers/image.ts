@@ -1,4 +1,4 @@
-import { gemini, GEMINI_MODEL_NAME, responseText, parseJsonResponse } from '$lib/server/gemini';
+import { gemini, GEMINI_MODEL_NAME, NO_THINKING, responseText, parseJsonResponse } from '$lib/server/gemini';
 import { extractionResultSchema } from '$lib/server/validation';
 import type { SourceParser, ExtractedChunk, SourceRecord, ParserContext } from '../types';
 
@@ -43,7 +43,8 @@ async function ocrOneImage(
 			systemInstruction: OCR_SYSTEM_PROMPT,
 			responseMimeType: 'application/json',
 			temperature: 0.2,
-			maxOutputTokens: 4096
+			maxOutputTokens: 4096,
+			...NO_THINKING
 		}
 	});
 	const parsed = extractionResultSchema.parse(parseJsonResponse(responseText(response)));

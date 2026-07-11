@@ -9,7 +9,16 @@ import { GEMINI_API_KEY, GEMINI_MODEL } from '$env/static/private';
  */
 export const gemini = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-export const GEMINI_MODEL_NAME = GEMINI_MODEL || 'gemini-2.5-flash';
+export const GEMINI_MODEL_NAME = GEMINI_MODEL || 'gemini-flash-latest';
+
+/**
+ * Current Gemini models spend part of maxOutputTokens on invisible
+ * "thinking" tokens before answering, which can silently starve a small
+ * budget and return an empty response. Every call in this app wants
+ * reliable structured output, not visible reasoning, so thinking is
+ * disabled everywhere via this shared config fragment.
+ */
+export const NO_THINKING = { thinkingConfig: { thinkingBudget: 0 } } as const;
 
 /** Extract the response text from a generateContent result. */
 export function responseText(response: { text?: string }): string {

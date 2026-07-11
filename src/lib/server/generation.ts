@@ -1,4 +1,4 @@
-import { gemini, GEMINI_MODEL_NAME, responseText, parseJsonResponse } from '$lib/server/gemini';
+import { gemini, GEMINI_MODEL_NAME, NO_THINKING, responseText, parseJsonResponse } from '$lib/server/gemini';
 import { generationResultSchema, type GenerationResult } from '$lib/server/validation';
 
 export interface ChunkForGeneration {
@@ -68,7 +68,8 @@ export async function generateQuestions(
 			systemInstruction: GENERATION_SYSTEM_PROMPT,
 			responseMimeType: 'application/json',
 			temperature: 0.4,
-			maxOutputTokens: 8192
+			maxOutputTokens: 8192,
+			...NO_THINKING
 		}
 	});
 
@@ -122,7 +123,8 @@ export async function generateRegionTheme(courseTitle: string, subject?: string 
 				systemInstruction: REGION_SYSTEM_PROMPT,
 				responseMimeType: 'application/json',
 				temperature: 0.9,
-				maxOutputTokens: 300
+				maxOutputTokens: 300,
+				...NO_THINKING
 			}
 		});
 		return parseJsonResponse<RegionTheme>(responseText(response));
