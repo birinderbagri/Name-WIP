@@ -1,0 +1,33 @@
+{
+  "name": "loreleaf-academy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Loreleaf Academy — a source-grounded, gamified study app. Upload your own materials and restore the Archive Isles.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.57.0",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "unpdf": "^0.12.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.5",
+    "@fontsource/pixelify-sans": "^5.2.5",
+    "@sveltejs/adapter-node": "^5.2.12",
+    "@sveltejs/kit": "^2.20.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@types/node": "^26.1.1",
+    "svelte": "^5.25.0",
+    "svelte-check": "^4.1.5",
+    "typescript": "^5.8.2",
+    "vite": "^6.3.2"
+  }
+}
