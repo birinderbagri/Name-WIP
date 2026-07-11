@@ -1,4 +1,4 @@
-import { anthropic, CLAUDE_MODEL, responseText, parseJsonResponse } from '$lib/server/claude';
+import { gemini, GEMINI_MODEL_NAME, responseText, parseJsonResponse } from '$lib/server/gemini';
 import { extractionResultSchema } from '$lib/server/validation';
 import type { SourceParser, ExtractedChunk, SourceRecord, ParserContext } from '../types';
 
@@ -28,33 +28,30 @@ async function ocrOneImage(
 	photoLabel: string
 ): Promise<string> {
 	const mediaType = MEDIA_TYPES[extension] ?? 'image/jpeg';
-	const message = await anthropic.messages.create({
-		model: CLAUDE_MODEL,
-		max_tokens: 4096,
-		system: OCR_SYSTEM_PROMPT,
-		messages: [
+	const response = await gemini.models.generateContent({
+		model: GEMINI_MODEL_NAME,
+		contents: [
 			{
 				role: 'user',
-				content: [
-					{
-						type: 'image',
-						source: {
-							type: 'base64',
-							media_type: mediaType,
-							data: Buffer.from(bytes).toString('base64')
-						}
-					},
-					{ type: 'text', text: `Transcribe this study material. Label it "${photoLabel}".` }
+				parts: [
+					{ inlineData: { mimeType: mediaType, data: Buffer.from(bytes).toString('base64') } },
+					{ text: `Transcribe this study material. Label it "${photoLabel}".` }
 				]
 			}
-		]
+		],
+		config: {
+			systemInstruction: OCR_SYSTEM_PROMPT,
+			responseMimeType: 'application/json',
+			temperature: 0.2,
+			maxOutputTokens: 4096
+		}
 	});
-	const parsed = extractionResultSchema.parse(parseJsonResponse(responseText(message)));
+	const parsed = extractionResultSchema.parse(parseJsonResponse(responseText(response)));
 	return parsed.pages.map((p) => p.content).join('\n\n');
 }
 
 /**
- * Image parser: downloads each private photo, OCRs it with Claude vision,
+ * Image parser: downloads each private photo, OCRs it with Gemini vision,
  * and emits one chunk per photo so every generated item can deep-link back
  * to the exact original photo. Multiple photos in one source form a single
  * logical source ("Biology Chapter 3 — 8 pages").
@@ -83,7 +80,7 @@ export const imageParser: SourceParser = {
 				locationLabel: label,
 				content,
 				storagePathIndex: i,
-				metadata: { extraction: 'claude_vision_ocr' }
+				metadata: { extraction: 'gemini_vision_ocr' }
 			});
 		}
 		return chunks;

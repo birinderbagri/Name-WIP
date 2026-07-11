@@ -14,8 +14,9 @@ section it came from.
 
 - **SvelteKit** (Svelte 5) — frontend + server routes, `adapter-node`
 - **Supabase** — Auth, Postgres (full RLS), private Storage buckets
-- **Claude API** — server-side only (vision OCR + question generation); the key never
-  reaches the browser
+- **Google Gemini API** — server-side only (vision OCR + question generation); the key
+  never reaches the browser. Uses Gemini's free tier (Google AI Studio), so there's no
+  cost to run this.
 - **Zod** — validation of both user requests *and* model output
 
 ## Getting started
@@ -23,9 +24,11 @@ section it came from.
 1. Create a Supabase project, then run in the SQL editor (in order):
    - `supabase/migrations/0001_initial_schema.sql`
    - `supabase/migrations/0002_storage.sql`
+   - `supabase/migrations/0003_post_mvp.sql`
+   - `supabase/migrations/0004_security_fixes.sql`
    - `supabase/seed.sql`
 2. Copy `.env.example` to `.env` and fill in your Supabase URL, anon key, service-role
-   key, and Anthropic API key.
+   key, and a free Gemini API key from [aistudio.google.com](https://aistudio.google.com/apikey).
 3. Install and run:
 
 ```bash
@@ -43,7 +46,7 @@ src/
   lib/
     server/
       supabase-admin.ts            service-role client + signed URL helper
-      claude.ts                    Anthropic client (server-only)
+      gemini.ts                    Gemini client (server-only)
       validation.ts                zod schemas for requests AND model output
       generation.ts                source-grounded question generation
       gamification.ts              XP/levels/streaks/creature mastery (single write path)
@@ -51,7 +54,7 @@ src/
       flags.ts                     feature flags (ads, shop, post-MVP imports)
       ingestion/
         types.ts                   SourceParser interface
-        parsers/image.ts           Claude-vision OCR, one chunk per photo
+        parsers/image.ts           Gemini-vision OCR, one chunk per photo
         parsers/pdf.ts             per-page text extraction (unpdf)
         parsers/pasted-text.ts     section splitting
     game/
@@ -70,7 +73,7 @@ src/
     /api/sources                   multipart upload → private storage
     /api/sources/[id]/extract      parser pipeline (job-queue-ready endpoint)
     /api/sources/[id]/confirm      persist user-corrected chunks
-    /api/sources/[id]/generate     Claude generation from confirmed chunks only
+    /api/sources/[id]/generate     Gemini generation from confirmed chunks only
     /api/source-links/[chunkId]    View Source resolution (signed URLs)
     /api/attempts                  answer recording + rewards
     /api/game/save, /api/game/boss

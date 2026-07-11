@@ -52,7 +52,7 @@ export const adEventSchema = z.object({
 });
 
 // ------------------------------------------------------------
-// Model-output schemas — Claude responses are untrusted input and
+// Model-output schemas — Gemini responses are untrusted input and
 // get the same validation treatment as user requests.
 // ------------------------------------------------------------
 

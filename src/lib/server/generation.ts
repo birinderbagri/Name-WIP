@@ -1,4 +1,4 @@
-import { anthropic, CLAUDE_MODEL, responseText, parseJsonResponse } from '$lib/server/claude';
+import { gemini, GEMINI_MODEL_NAME, responseText, parseJsonResponse } from '$lib/server/gemini';
 import { generationResultSchema, type GenerationResult } from '$lib/server/validation';
 
 export interface ChunkForGeneration {
@@ -52,19 +52,27 @@ export async function generateQuestions(
 		)
 		.join('\n\n');
 
-	const message = await anthropic.messages.create({
-		model: CLAUDE_MODEL,
-		max_tokens: 8192,
-		system: GENERATION_SYSTEM_PROMPT,
-		messages: [
+	const response = await gemini.models.generateContent({
+		model: GEMINI_MODEL_NAME,
+		contents: [
 			{
 				role: 'user',
-				content: `Source chunks (user-confirmed):\n\n${chunkBlocks}\n\nWrite between ${minQuestions} and ${maxQuestions} questions following every rule.`
+				parts: [
+					{
+						text: `Source chunks (user-confirmed):\n\n${chunkBlocks}\n\nWrite between ${minQuestions} and ${maxQuestions} questions following every rule.`
+					}
+				]
 			}
-		]
+		],
+		config: {
+			systemInstruction: GENERATION_SYSTEM_PROMPT,
+			responseMimeType: 'application/json',
+			temperature: 0.4,
+			maxOutputTokens: 8192
+		}
 	});
 
-	const result = generationResultSchema.parse(parseJsonResponse(responseText(message)));
+	const result = generationResultSchema.parse(parseJsonResponse(responseText(response)));
 
 	// Hard grounding check: drop anything citing a chunk that doesn't exist,
 	// and anything with an out-of-range correct_index.
@@ -102,15 +110,22 @@ const FALLBACK_THEME: RegionTheme = {
 
 export async function generateRegionTheme(courseTitle: string, subject?: string | null): Promise<RegionTheme> {
 	try {
-		const message = await anthropic.messages.create({
-			model: CLAUDE_MODEL,
-			max_tokens: 300,
-			system: REGION_SYSTEM_PROMPT,
-			messages: [
-				{ role: 'user', content: `Course: "${courseTitle}"${subject ? ` (subject: ${subject})` : ''}` }
-			]
+		const response = await gemini.models.generateContent({
+			model: GEMINI_MODEL_NAME,
+			contents: [
+				{
+					role: 'user',
+					parts: [{ text: `Course: "${courseTitle}"${subject ? ` (subject: ${subject})` : ''}` }]
+				}
+			],
+			config: {
+				systemInstruction: REGION_SYSTEM_PROMPT,
+				responseMimeType: 'application/json',
+				temperature: 0.9,
+				maxOutputTokens: 300
+			}
 		});
-		return parseJsonResponse<RegionTheme>(responseText(message));
+		return parseJsonResponse<RegionTheme>(responseText(response));
 	} catch {
 		// Theming is flavor, not learning content — a fallback is fine here.
 		return FALLBACK_THEME;
