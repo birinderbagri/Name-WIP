@@ -15,8 +15,23 @@ const ALLOWED: Record<string, { mimes: string[]; extensions: Record<string, stri
 	pdf: {
 		mimes: ['application/pdf'],
 		extensions: { 'application/pdf': 'pdf' }
+	},
+	docx: {
+		mimes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+		extensions: {
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx'
+		}
+	},
+	pptx: {
+		mimes: ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+		extensions: {
+			'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx'
+		}
 	}
 };
+
+// Formats that upload a single file (one file per source, like PDF).
+const SINGLE_FILE_TYPES = new Set(['pdf', 'docx', 'pptx']);
 
 /**
  * POST /api/sources — create a source record and store raw files privately.
@@ -40,8 +55,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!courseId || !title || title.length > 200) {
 		return json({ error: 'courseId and a title (max 200 chars) are required.' }, { status: 400 });
 	}
-	if (!['image', 'pdf', 'pasted_text'].includes(sourceType)) {
-		return json({ error: 'Unsupported source type for MVP.' }, { status: 400 });
+	if (!['image', 'pdf', 'pasted_text', 'docx', 'pptx', 'webpage'].includes(sourceType)) {
+		return json({ error: 'Unsupported source type.' }, { status: 400 });
 	}
 
 	// Ownership check — the course must belong to the caller.
@@ -65,17 +80,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Validate payload before creating anything.
 	let files: File[] = [];
 	let pastedContent = '';
+	let originUrl: string | null = null;
 	if (sourceType === 'pasted_text') {
 		pastedContent = String(form.get('content') ?? '').trim();
 		if (pastedContent.length < 20 || pastedContent.length > 200_000) {
 			return json({ error: 'Pasted notes must be between 20 and 200,000 characters.' }, { status: 400 });
 		}
+	} else if (sourceType === 'webpage') {
+		originUrl = String(form.get('originUrl') ?? '').trim();
+		let parsedUrl: URL | null = null;
+		try {
+			parsedUrl = new URL(originUrl);
+		} catch {
+			parsedUrl = null;
+		}
+		if (!parsedUrl || (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:')) {
+			return json({ error: 'Enter a valid public http(s) URL.' }, { status: 400 });
+		}
 	} else {
 		files = form.getAll('files').filter((f): f is File => f instanceof File);
 		const rules = ALLOWED[sourceType];
 		if (files.length === 0) return json({ error: 'No files provided.' }, { status: 400 });
-		if (sourceType === 'pdf' && files.length > 1) {
-			return json({ error: 'Upload one PDF at a time.' }, { status: 400 });
+		if (SINGLE_FILE_TYPES.has(sourceType) && files.length > 1) {
+			return json({ error: 'Upload one file at a time for this format.' }, { status: 400 });
 		}
 		if (files.length > MAX_FILES) {
 			return json({ error: `At most ${MAX_FILES} photos per source.` }, { status: 400 });
@@ -97,7 +124,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			user_id: userId,
 			source_type: sourceType,
 			title,
-			status: 'uploaded'
+			status: 'uploaded',
+			origin_url: originUrl
 		})
 		.select('id')
 		.single();
@@ -142,6 +170,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				.update({ status: 'failed', error_message: (err as Error).message })
 				.eq('id', source.id);
 		}
+		return json({ sourceId: source.id });
+	}
+
+	if (sourceType === 'webpage') {
+		// No raw file to store; the review page triggers extraction, which
+		// fetches origin_url. Kept out of the request path since it hits the
+		// network.
 		return json({ sourceId: source.id });
 	}
 

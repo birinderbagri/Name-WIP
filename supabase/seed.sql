@@ -11,10 +11,25 @@ insert into creatures (slug, name, subject_affinity, description, sprite_key, ev
   ('scrollfox',   'Scrollfox',   'history', 'A fox folded from ancient paper scrolls. Its tail is a timeline.', 'scrollfox', 1, 5),
   ('inkmoth',     'Inkmoth',     'english', 'A moth with wings of drying ink. It leaves quotations where it lands.', 'inkmoth', 1, 5);
 
--- Evolution: Sproutome -> Bloomtome
+-- Stage-2 evolutions (reached through repeated correct answers on a topic).
+insert into creatures (slug, name, subject_affinity, description, sprite_key, evolution_stage, evolve_at_level) values
+  ('bloomtome',  'Bloomtome',  'starter', 'The notebook has blossomed. Its pages turn themselves to the topic you need.', 'bloomtome', 2, 10),
+  ('flaskfern',  'Flaskfern',  'science', 'Mossvial sprouted a canopy of ferns that filter its bubbling brews.', 'mossvial', 2, 10),
+  ('tallygolem', 'Tallygolem', 'math',    'Sumgolem grew a second set of counting stones and never loses its place.', 'sumgolem', 2, 10),
+  ('chronofox',  'Chronofox',  'history', 'Scrollfox unfurled a longer timeline-tail spanning whole eras.', 'scrollfox', 2, 10),
+  ('quillmoth',  'Quillmoth',  'english', 'Inkmoth grew quill-tipped wings that draft verses mid-flight.', 'inkmoth', 2, 10);
+
+-- Stage-3 evolutions (mastery capstones).
 insert into creatures (slug, name, subject_affinity, description, sprite_key, evolution_stage) values
-  ('bloomtome', 'Bloomtome', 'starter', 'The notebook has blossomed. Its pages turn themselves to the topic you need.', 'bloomtome', 2);
-update creatures set evolves_to = (select id from creatures where slug = 'bloomtome') where slug = 'sproutome';
+  ('grandtome',  'Grandtome',  'starter', 'A living library. Every lesson you have ever confirmed lives in its spine.', 'bloomtome', 3);
+
+-- Link the evolution chains.
+update creatures set evolves_to = (select id from creatures where slug = 'bloomtome')  where slug = 'sproutome';
+update creatures set evolves_to = (select id from creatures where slug = 'grandtome')  where slug = 'bloomtome';
+update creatures set evolves_to = (select id from creatures where slug = 'flaskfern')  where slug = 'mossvial';
+update creatures set evolves_to = (select id from creatures where slug = 'tallygolem') where slug = 'sumgolem';
+update creatures set evolves_to = (select id from creatures where slug = 'chronofox')  where slug = 'scrollfox';
+update creatures set evolves_to = (select id from creatures where slug = 'quillmoth')  where slug = 'inkmoth';
 
 -- --- Cosmetics shop (Coming Soon) ---
 insert into cosmetic_shop_sections (slug, name, category, sort_order, is_coming_soon) values
@@ -51,6 +66,8 @@ insert into feature_flags (key, enabled, value_json, description) values
   ('ads_rewarded',      false, '{"coins_per_view": 15}', 'Opt-in rewarded ads granting coins/cosmetic currency only.'),
   ('ads_interstitial',  false, '{"min_seconds_between": 600}', 'Interstitials only at safe breakpoints (session summary, region complete).'),
   ('cosmetics_shop_purchases', false, null, 'Master switch for real shop purchases. Off = Coming Soon.'),
-  ('webpage_import',    false, null, 'Public webpage import (post-MVP).'),
-  ('docx_import',       false, null, 'DOCX parsing (post-MVP).'),
-  ('pptx_import',       false, null, 'PPTX parsing (post-MVP).');
+  ('webpage_import',    true,  null, 'Public webpage import.'),
+  ('docx_import',       true,  null, 'DOCX parsing.'),
+  ('pptx_import',       true,  null, 'PPTX parsing.'),
+  ('spaced_repetition', true,  null, 'SM-2-lite review scheduling for missed/seen questions.'),
+  ('leaderboards',      true,  null, 'Opt-in class leaderboards by XP.');

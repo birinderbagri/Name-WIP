@@ -1,5 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import { shadowConceptQuestionIds } from '$lib/server/gamification';
+import { dueQuestionIds } from '$lib/server/spaced-repetition';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -36,7 +37,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		redirect(303, `/app/courses/${course.id}`);
 	}
 
-	const [{ data: save }, { data: creature }, { data: progress }, shadowIds] = await Promise.all([
+	const [{ data: save }, { data: creature }, { data: progress }, shadowIds, dueIds] = await Promise.all([
 		locals.supabase
 			.from('game_saves')
 			.select('player_x, player_y, cleared_nodes_json, map_seed')
@@ -55,8 +56,16 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			.eq('user_id', userId)
 			.eq('course_id', course.id)
 			.maybeSingle(),
-		shadowConceptQuestionIds(userId, course.id)
+		shadowConceptQuestionIds(userId, course.id),
+		dueQuestionIds(userId, course.id)
 	]);
+
+	// Review zone = concepts you most recently missed, plus anything spaced
+	// repetition says is due today. Deduped, and only questions in this course.
+	const questionIdSet = new Set(questions.map((q) => q.id));
+	const reviewQuestionIds = [...new Set([...shadowIds, ...dueIds])].filter((id) =>
+		questionIdSet.has(id)
+	);
 
 	const creatureInfo = creature?.creatures as unknown as
 		| { name: string; sprite_key: string }
@@ -72,6 +81,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			level: creature?.level ?? 1
 		},
 		bossDefeated: progress?.boss_defeated ?? false,
-		shadowQuestionIds: shadowIds
+		shadowQuestionIds: reviewQuestionIds
 	};
 };

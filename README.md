@@ -122,9 +122,32 @@ decorations, biome skins, creature variants) and preview items with no purchase 
 until `cosmetics_shop_purchases` is flipped. Cosmetic tables have no gameplay stat
 fields at all, by design.
 
-## Post-MVP roadmap
+## Post-MVP features (shipped)
 
-DOCX/PPTX parsing (parser modules already have a registry slot), webpage import,
-multi-photo grouping UI polish, spaced repetition, more regions/creatures/evolutions,
-cosmetics inventory + equipping, leaderboards, ad provider integration behind the
-existing scaffold.
+Built on top of the MVP:
+
+- **DOCX parsing** (`mammoth`) — section-split by paragraphs.
+- **PPTX parsing** (`jszip`) — one chunk per slide, `Slide N` labels.
+- **Webpage import** (`linkedom` + `@mozilla/readability`) — main-content extraction with
+  an SSRF guard that refuses localhost/private-network hosts.
+- **Spaced repetition** — SM-2-lite `review_schedule` per user/question; due cards
+  resurface in the review zone alongside recently-missed shadow concepts. Study-quality
+  only: never grants XP or advantage.
+- **Class leaderboards** — opt-in classes with a share code (`/app/leaderboard`), ranked
+  by XP through an RLS-scoped `class_leaderboard` view. Purely social.
+- **Cosmetics inventory + equipping** — gameplay-earnable items (granted on region
+  completion) can be equipped one-per-category via `/api/cosmetics/equip`; shop shows
+  ownership and equip controls. Cosmetic tables still carry no gameplay fields.
+- **More creatures + evolution chains** — each subject creature now has stage-2/3
+  evolutions reached through mastery.
+
+New feature flags (`webpage_import`, `docx_import`, `pptx_import`, `spaced_repetition`,
+`leaderboards`) are seeded **on**; the storage bucket's allowed MIME types were extended
+for Office files in `migrations/0003_post_mvp.sql`.
+
+## Still deferred
+
+- **Payments** — intentionally out (the product is ads-first; needs a real processor).
+- **Real ad-network integration** — the banner/rewarded/interstitial scaffold and
+  server-side reward path are in place, but wiring a live ad SDK needs a provider
+  account.

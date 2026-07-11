@@ -3,13 +3,21 @@
 
 	let { data } = $props();
 
-	type UploadKind = 'image' | 'pdf' | 'pasted_text';
+	type UploadKind = 'image' | 'pdf' | 'docx' | 'pptx' | 'pasted_text' | 'webpage';
 	let uploadKind: UploadKind = $state('image');
 	let sourceTitle = $state('');
 	let pastedContent = $state('');
+	let originUrl = $state('');
 	let files: FileList | undefined = $state();
 	let uploading = $state(false);
 	let uploadError: string | null = $state(null);
+
+	const FILE_ACCEPT: Record<string, string> = {
+		image: 'image/png,image/jpeg,image/webp',
+		pdf: 'application/pdf',
+		docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+		pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+	};
 
 	const STATUS_LABELS: Record<string, string> = {
 		uploaded: 'Uploaded — extraction pending',
@@ -29,12 +37,17 @@
 			uploadError = 'Give this source a name, e.g. "Chapter 3 notes".';
 			return;
 		}
-		if (uploadKind !== 'pasted_text' && (!files || files.length === 0)) {
+		const isFileKind = uploadKind === 'image' || uploadKind === 'pdf' || uploadKind === 'docx' || uploadKind === 'pptx';
+		if (isFileKind && (!files || files.length === 0)) {
 			uploadError = 'Choose at least one file to upload.';
 			return;
 		}
 		if (uploadKind === 'pasted_text' && pastedContent.trim().length < 20) {
 			uploadError = 'Paste at least a paragraph of notes.';
+			return;
+		}
+		if (uploadKind === 'webpage' && !/^https?:\/\/.+/i.test(originUrl.trim())) {
+			uploadError = 'Enter a valid public http(s) URL.';
 			return;
 		}
 
@@ -46,6 +59,8 @@
 			form.set('title', sourceTitle.trim());
 			if (uploadKind === 'pasted_text') {
 				form.set('content', pastedContent);
+			} else if (uploadKind === 'webpage') {
+				form.set('originUrl', originUrl.trim());
 			} else {
 				for (const file of files ?? []) form.append('files', file);
 			}
@@ -96,7 +111,10 @@
 			<select id="kind" bind:value={uploadKind}>
 				<option value="image">Photos of notes / worksheets / textbook pages</option>
 				<option value="pdf">PDF</option>
+				<option value="docx">Word document (.docx)</option>
+				<option value="pptx">PowerPoint (.pptx)</option>
 				<option value="pasted_text">Pasted notes</option>
+				<option value="webpage">Public webpage / article URL</option>
 			</select>
 
 			<label for="stitle">Name this source</label>
@@ -105,12 +123,22 @@
 			{#if uploadKind === 'pasted_text'}
 				<label for="pasted">Your notes</label>
 				<textarea id="pasted" bind:value={pastedContent} placeholder="Paste your notes here…"></textarea>
+			{:else if uploadKind === 'webpage'}
+				<label for="url">Article URL</label>
+				<input id="url" type="url" bind:value={originUrl} placeholder="https://…" />
+				<p class="hint">We import the main readable content only — public pages work best.</p>
 			{:else if uploadKind === 'image'}
 				<label for="files">Photos (up to 8 — they will be grouped as one source)</label>
-				<input id="files" type="file" accept="image/png,image/jpeg,image/webp" multiple bind:files />
+				<input id="files" type="file" accept={FILE_ACCEPT.image} multiple bind:files />
+			{:else if uploadKind === 'docx'}
+				<label for="files">Word document</label>
+				<input id="files" type="file" accept={FILE_ACCEPT.docx} bind:files />
+			{:else if uploadKind === 'pptx'}
+				<label for="files">PowerPoint file</label>
+				<input id="files" type="file" accept={FILE_ACCEPT.pptx} bind:files />
 			{:else}
 				<label for="files">PDF file</label>
-				<input id="files" type="file" accept="application/pdf" bind:files />
+				<input id="files" type="file" accept={FILE_ACCEPT.pdf} bind:files />
 			{/if}
 
 			<button class="btn btn--green" type="submit" disabled={uploading}>

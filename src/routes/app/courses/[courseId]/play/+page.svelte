@@ -41,6 +41,7 @@
 	let activeNode: StudyNodePlacement | null = $state(null);
 	let sessionSummary: (BattleResult & { bossWon: boolean; kind: string }) | null = $state(null);
 	let saveFailed = $state(false);
+	let cosmeticEarned = $state(false);
 
 	let viewer = $state({
 		open: false,
@@ -97,6 +98,7 @@
 	function onNodeEnter(node: StudyNodePlacement) {
 		if (node.questionIds.length === 0) return;
 		sessionSummary = null;
+		cosmeticEarned = false;
 		activeNode = node;
 	}
 
@@ -149,7 +151,7 @@
 			if (result.bossWon) {
 				clearedNodes = [...clearedNodes, node.id];
 				try {
-					await fetch('/api/game/boss', {
+					const res = await fetch('/api/game/boss', {
 						method: 'POST',
 						headers: { 'content-type': 'application/json' },
 						body: JSON.stringify({
@@ -158,6 +160,10 @@
 							total: result.total
 						})
 					});
+					if (res.ok) {
+						const body = await res.json();
+						cosmeticEarned = body.cosmeticGranted === true;
+					}
 				} catch {
 					saveFailed = true;
 				}
@@ -223,6 +229,9 @@
 		<p>
 			{sessionSummary.correct}/{sessionSummary.total} correct · +{sessionSummary.xpGained} XP · +{sessionSummary.coinsGained} coins
 		</p>
+		{#if cosmeticEarned}
+			<p class="cosmetic-earned">You earned a cosmetic: the Petal Cloak! Equip it in the shop.</p>
+		{/if}
 		<!-- Interstitial slot: session summary is a safe breakpoint — never during active studying. -->
 		<AdSlot placement="interstitial" enabled={data.adFlags.interstitial} context="session_summary" />
 	</div>
@@ -266,4 +275,5 @@
 		margin-bottom: 1rem;
 	}
 	.session-summary { margin-top: 1rem; }
+	.cosmetic-earned { color: var(--pink-deep); font-family: var(--font-pixel); font-size: 0.9rem; }
 </style>

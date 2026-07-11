@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase-admin';
 import { parseBody, RequestValidationError } from '$lib/server/validation';
+import { grantCosmeticBySlug } from '$lib/server/cosmetics';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 
@@ -50,7 +51,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			{ onConflict: 'user_id,course_id' }
 		);
 		if (error) return json({ error: 'Could not record the victory.' }, { status: 500 });
+
+		// Restoring a region earns a cosmetic (decorative only).
+		const cosmeticGranted = await grantCosmeticBySlug(userId, 'petal-cloak');
+		return json({ won, cosmeticGranted });
 	}
 
-	return json({ won });
+	return json({ won, cosmeticGranted: false });
 };

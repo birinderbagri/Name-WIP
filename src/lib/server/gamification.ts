@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '$lib/server/supabase-admin';
+import { recordReview } from '$lib/server/spaced-repetition';
 
 // ------------------------------------------------------------
 // XP / levels — no purchasable power anywhere in this module.
@@ -93,6 +94,10 @@ export async function applyAttempt(params: {
 		in_boss_battle: inBossBattle
 	});
 	if (attemptError) throw new Error(`Could not record attempt: ${attemptError.message}`);
+
+	// Update the spaced-repetition schedule so this concept resurfaces at the
+	// right time. Study-quality only — never affects XP or rewards.
+	await recordReview({ userId, questionId, courseId, isCorrect });
 
 	const { xp, coins } = xpForAttempt({ isCorrect, focusChain, wasRedemption, inBossBattle });
 

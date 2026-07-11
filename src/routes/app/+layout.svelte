@@ -18,6 +18,7 @@
 			<span class="stat" title="Study streak">{data.profile.streak_days} day streak</span>
 		</div>
 		<nav class="topnav">
+			<a class="btn btn--small btn--ghost" href="/app/leaderboard">Leaderboard</a>
 			<a class="btn btn--small btn--ghost" href="/app/shop">Shop <span class="badge badge--soon">Soon</span></a>
 			<form method="POST" action="/logout">
 				<button class="btn btn--small btn--ghost" type="submit">Sign out</button>
